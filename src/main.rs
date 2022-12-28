@@ -5,14 +5,25 @@ use dotenv::dotenv;
 struct Users {
     user_id: i32,
     name: String,
-    email: String
+    email: String,
+}
+
+
+struct UsersProfile  {
+    mobile: String,
+    userable_id: i32,
+    userable_type: String,
+    password: String,
+    country: String,
+    country_code: String,
+    region: String,
 }
 
 fn main() {
     // init dot env
     dotenv().ok();
-    let DATABASE_URL = env::var("DATABASE_URL");
-    let mut client = Client::connect(&DATABASE_URL.unwrap(), NoTls).unwrap();
+    let database_url = env::var("DATABASE_URL");
+    let mut client = Client::connect(&database_url.unwrap(), NoTls).unwrap();
     let query = client.query("SELECT user_id, name, email FROM users LIMIT 10", &[]);
 
     if query.is_ok() == true{
@@ -37,7 +48,23 @@ fn main() {
 
     let user_detail = get_user_by_email(&mut client,String::from("zulfikralahmudin@gmail.com")).unwrap();
 
-    println!("{} {} {} ", user_detail[0].name , user_detail[0].email, user_detail[0].user_id)
+    println!("{} {} {} ", user_detail[0].name , user_detail[0].email, user_detail[0].user_id);
+    println!("Add user >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+    let add_user = Users {
+        name: String::from("Zulfikra L Abdjul"),
+        email: String::from("lahmudin@gmail.com"),
+        user_id:0
+    };
+    let add_user_profile = UsersProfile {
+        country: String::from("indonesia"),
+        country_code: String::from("id"),
+        mobile: String::from("081231241"),
+        password: String::from("1"),
+        region: String::from("idn"),
+        userable_id:999,
+        userable_type:String::from("worker"),
+    };
+    add_new_user(&mut client, add_user, add_user_profile);
  }
 
 fn get_user(client: &mut Client) -> Result<Vec<Users>,()> {
@@ -79,3 +106,12 @@ fn get_user_by_email(client: &mut Client, name: String) -> Result<Vec<Users>, ()
     Ok(response)
 }
 
+fn add_new_user(client: &mut Client, user: Users, user_profile: UsersProfile) -> Result<(), ()> {
+    match client.execute(
+        "INSERT INTO users (name, email, mobile, userable_id, userable_type, password, country, country_code) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", 
+        &[&user.name, &user.email, &user_profile.mobile, &user_profile.userable_id, &"worker", &user_profile.password, &user_profile.country, &user_profile.country_code]) {
+            Ok(_) => (),
+            Err(err) => panic!("{}", err)
+        }
+    Ok(())
+}
