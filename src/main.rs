@@ -1,6 +1,6 @@
 use std::vec;
 
-use postgres::{Client, NoTls, Error};
+use postgres::{Client, NoTls};
 
 
 struct Users {
@@ -11,7 +11,6 @@ struct Users {
 
 fn main() {
     let mut client = Client::connect("postgres://qwork:qwork_production@localhost:5678/qwork", NoTls).unwrap();
-
     let query = client.query("SELECT user_id, name, email FROM users LIMIT 10", &[]);
     if query.is_ok() == true{
         for row in query.unwrap() {
@@ -27,14 +26,22 @@ fn main() {
     let users = get_user(&mut client);
 
     for row in users.unwrap() {
-        println!("{}", row.name);
+        println!("Name {}, Email {}, user_id {}", row.name, row.email, row.user_id);
     }
+
+    // Get user detail
+    println!("Get user detail >>>>>>>>>>>>>>>>>>>>");
+
+    let user_detail = get_user_by_email(&mut client,String::from("zulfikralahmudin@gmail.com")).unwrap();
+
+    println!("{} {} {} ", user_detail[0].name , user_detail[0].email, user_detail[0].user_id)
  }
 
 fn get_user(client: &mut Client) -> Result<Vec<Users>,()> {
+
     let res = match client.query("SELECT user_id, name, email FROM users LIMIT 10", &[]) {
         Ok(res) => res,
-        Err(err) =>  panic!("Something is not right",)
+        Err(_) =>  panic!("Something is not right",)
     };
 
     let mut response = vec![];
@@ -49,8 +56,23 @@ fn get_user(client: &mut Client) -> Result<Vec<Users>,()> {
             };
             response.push(r);
         }
-
         Ok(response)
     }
 }
 
+fn get_user_by_email(client: &mut Client, name: String) -> Result<Vec<Users>, ()> {
+    let res = match client.query("SELECT name, user_id, email FROM users WHERE email = $1", &[&name.to_owned()]) {
+        Ok(_res) => _res,
+        Err(err) => panic!("{}", err)
+    };
+    let mut response = vec![];
+    let user = Users {
+        name: res[0].get(0),
+        user_id: res[0].get(1),
+        email: res[0].get(2)
+    };
+
+    response.push(user);
+    Ok(response)
+    
+}
