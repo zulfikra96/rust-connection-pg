@@ -1,8 +1,7 @@
 use std::vec;
-
 use postgres::{Client, NoTls};
-
-
+use std::env;
+use dotenv::dotenv;
 struct Users {
     user_id: i32,
     name: String,
@@ -10,8 +9,12 @@ struct Users {
 }
 
 fn main() {
-    let mut client = Client::connect("postgres://qwork:qwork_production@localhost:5678/qwork", NoTls).unwrap();
+    // init dot env
+    dotenv().ok();
+    let DATABASE_URL = env::var("DATABASE_URL");
+    let mut client = Client::connect(&DATABASE_URL.unwrap(), NoTls).unwrap();
     let query = client.query("SELECT user_id, name, email FROM users LIMIT 10", &[]);
+
     if query.is_ok() == true{
         for row in query.unwrap() {
             let result = Users {
@@ -38,7 +41,7 @@ fn main() {
  }
 
 fn get_user(client: &mut Client) -> Result<Vec<Users>,()> {
-
+    
     let res = match client.query("SELECT user_id, name, email FROM users LIMIT 10", &[]) {
         Ok(res) => res,
         Err(_) =>  panic!("Something is not right",)
@@ -74,5 +77,5 @@ fn get_user_by_email(client: &mut Client, name: String) -> Result<Vec<Users>, ()
 
     response.push(user);
     Ok(response)
-    
 }
+
